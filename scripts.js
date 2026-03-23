@@ -80,6 +80,7 @@ function renderCalendar(service, price, availableHours) {
     document.querySelectorAll('.time-slot').forEach(slot => {
         slot.addEventListener('click', () => {
             selectedTime = slot.innerText;
+            document.getElementById('confirmation-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
             document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('active-slot'));
             slot.classList.add('active-slot');
             document.getElementById('confirmation-form').classList.remove('d-none');

@@ -93,3 +93,29 @@ h1, h2, .navbar-brand {
 .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
 }
+/* Ajustes para Celulares */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.5rem !important; /* Título más chico para que no se corte */
+    }
+    
+    .card-service {
+        margin-bottom: 20px; /* Espacio entre tarjetas cuando se apilan */
+    }
+
+    .time-slot {
+        width: 100%; /* Botones de hora a lo ancho del celu para que sea fácil clickear */
+        margin-bottom: 10px;
+        padding: 15px !important;
+        font-size: 1.1rem;
+    }
+
+    #client-name, #final-confirm {
+        max-width: 100% !important; /* El input ocupa todo el ancho en el celu */
+    }
+
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
