@@ -24,15 +24,27 @@ async function checkAvailabilityAndRender(service, price) {
     const container = document.getElementById('booking-container');
     container.innerHTML = `<p class="text-white">Checking availability...</p>`;
 
-    // Traemos todos los turnos que ya existen
+    // --- LÓGICA NIVEL PRO: SOLO TURNOS DE HOY ---
+    const today = new Date().toISOString().split('T')[0]; // Ejemplo: "2026-03-23"
+
     const { data: bookedAppointments, error } = await supabaseClient
         .from('appointments')
-        .select('appointment_time');
+        .select('appointment_time')
+        .gte('created_at', `${today}T00:00:00Z`) // Desde que empezó hoy
+        .lte('created_at', `${today}T23:59:59Z`); // Hasta que termine hoy
 
     if (error) {
         console.error(error);
         return alert("Error checking availability");
     }
+    // --------------------------------------------
+
+    const allHours = ["09:00 AM", "10:30 AM", "01:00 PM", "03:30 PM", "05:00 PM"];
+    const takenHours = bookedAppointments.map(a => a.appointment_time);
+    const availableHours = allHours.filter(hour => !takenHours.includes(hour));
+
+    renderCalendar(service, price, availableHours);
+}
 
     // Lista de todos los horarios posibles
     const allHours = ["09:00 AM", "10:30 AM", "01:00 PM", "03:30 PM", "05:00 PM"];
