@@ -1,39 +1,60 @@
-// 1. Configuración de Supabase (Tus credenciales reales)
 const SUPABASE_URL = 'https://vldxrgqfhyiovmhpwwji.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_-7QXKM09mwe4tkJrmeGj2Q_5SEckfef';
-
-// 2. Inicializamos el cliente
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let selectedService = "";
 let selectedTime = "";
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Escuchamos clics en los botones de "Select" de los servicios
     const buttons = document.querySelectorAll('.btn-outline-gold, .card-service .btn-gold');
-    
     buttons.forEach(button => {
         button.addEventListener('click', (e) => {
             const card = e.target.closest('.card-service');
             selectedService = card.querySelector('h3').innerText;
             const price = card.querySelector('.price').innerText;
-            
-            // Bajamos al calendario y lo dibujamos
             document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
-            renderCalendar(selectedService, price);
+            
+            // Ahora primero chequeamos disponibilidad antes de renderizar
+            checkAvailabilityAndRender(selectedService, price);
         });
     });
 });
 
-// 3. Función para dibujar el calendario de horas
-function renderCalendar(service, price) {
+async function checkAvailabilityAndRender(service, price) {
     const container = document.getElementById('booking-container');
-    const availableHours = ["09:00 AM", "10:30 AM", "01:00 PM", "03:30 PM", "05:00 PM"];
+    container.innerHTML = `<p class="text-white">Checking availability...</p>`;
+
+    // Traemos todos los turnos que ya existen
+    const { data: bookedAppointments, error } = await supabaseClient
+        .from('appointments')
+        .select('appointment_time');
+
+    if (error) {
+        console.error(error);
+        return alert("Error checking availability");
+    }
+
+    // Lista de todos los horarios posibles
+    const allHours = ["09:00 AM", "10:30 AM", "01:00 PM", "03:30 PM", "05:00 PM"];
+    
+    // Filtramos: solo dejamos los que NO están en los datos traídos de Supabase
+    const takenHours = bookedAppointments.map(a => a.appointment_time);
+    const availableHours = allHours.filter(hour => !takenHours.includes(hour));
+
+    renderCalendar(service, price, availableHours);
+}
+
+function renderCalendar(service, price, availableHours) {
+    const container = document.getElementById('booking-container');
+
+    if (availableHours.length === 0) {
+        container.innerHTML = `<h4 class="text-danger">Sorry, no slots available for today!</h4>`;
+        return;
+    }
 
     container.innerHTML = `
         <div class="animate-fade-in">
-            <h4 class="mb-3 text-white">Booking: <span class="gold-text">${service}</span> (${price})</h4>
-            <p class="text-muted">Select an available time for today:</p>
+            <h4 class="mb-3 text-white">Booking: <span class="gold-text">${service}</span></h4>
             <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
                 ${availableHours.map(hour => `<button class="btn btn-outline-gold time-slot">${hour}</button>`).join('')}
             </div>
@@ -44,73 +65,46 @@ function renderCalendar(service, price) {
         </div>
     `;
 
-    // Lógica para elegir la hora
     document.querySelectorAll('.time-slot').forEach(slot => {
         slot.addEventListener('click', () => {
             selectedTime = slot.innerText;
-            // Marcamos el botón seleccionado
             document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('active-slot'));
             slot.classList.add('active-slot');
-            // Mostramos el input del nombre
             document.getElementById('confirmation-form').classList.remove('d-none');
         });
     });
 
-    // Evento para el botón de confirmación final
     document.getElementById('final-confirm').addEventListener('click', confirmBooking);
 }
 
-// 4. Función para enviar los datos a Supabase
 async function confirmBooking() {
-    const nameInput = document.getElementById('client-name');
-    const name = nameInput.value.trim();
-    
-    if (!name) {
-        alert("Please enter your name to continue.");
-        return;
-    }
+    const name = document.getElementById('client-name').value.trim();
+    if (!name) return alert("Please enter your name");
 
     const btn = document.getElementById('final-confirm');
     const container = document.getElementById('booking-container');
-
-    // Estado de carga
     btn.innerText = "Processing...";
     btn.disabled = true;
 
-    try {
-        const { error } = await supabaseClient
-            .from('appointments') 
-            .insert([{ 
-                client_name: name, 
-                service_name: selectedService, 
-                appointment_time: selectedTime 
-            }]);
+    const { error } = await supabaseClient
+        .from('appointments') 
+        .insert([{ client_name: name, service_name: selectedService, appointment_time: selectedTime }]);
 
-        if (error) throw error;
-
-        // --- EFECTO DE DESAPARECER Y MENSAJE DE ÉXITO ---
-        container.style.transition = "opacity 0.5s ease";
+    if (error) {
+        alert("Error: " + error.message);
+        btn.disabled = false;
+    } else {
         container.style.opacity = "0";
-
         setTimeout(() => {
             container.innerHTML = `
                 <div class="animate-fade-in text-center py-5">
-                    <div class="mb-3">
-                        <span style="font-size: 60px;">✅</span>
-                    </div>
-                    <h2 class="gold-text mb-2">Appointment Confirmed!</h2>
-                    <p class="lead">Thank you, <strong>${name}</strong>.</p>
-                    <p class="text-muted">We'll see you at <strong>${selectedTime}</strong> for your <strong>${selectedService}</strong>.</p>
-                    <button class="btn btn-outline-gold mt-4" onclick="location.reload()">Book Another Service</button>
+                    <span style="font-size: 60px;">✅</span>
+                    <h2 class="gold-text">Confirmed!</h2>
+                    <p class="text-white">See you at <strong>${selectedTime}</strong>, ${name}.</p>
+                    <button class="btn btn-outline-gold mt-3" onclick="location.reload()">Done</button>
                 </div>
             `;
             container.style.opacity = "1";
         }, 500);
-
-    } catch (err) {
-        console.error("Error:", err.message);
-        alert("Something went wrong: " + err.message);
-        btn.innerText = "CONFIRM RESERVATION";
-        btn.disabled = false;
     }
 }
