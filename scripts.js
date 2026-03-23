@@ -49,12 +49,25 @@ function renderCalendar(service, price) {
     });
 }
 
-function confirmBooking() {
+async function confirmBooking() {
     const name = document.getElementById('client-name').value;
-    if(name) {
-        alert(`Congratulations ${name}! Your appointment has been requested. (This will connect to Supabase tomorrow)`);
+    if (!name) return alert("Please enter your name");
+
+    const { data, error } = await supabaseClient
+        .from('appointments') 
+        .insert([{ 
+            client_name: name, 
+            service_name: selectedService, 
+            appointment_time: selectedTime 
+        }]);
+
+    if (error) {
+        console.error(error);
+        alert("Error: " + error.message);
     } else {
-        alert("Please enter your name");
+        // Mensaje en inglés para el cliente
+        alert("Success! Your appointment has been booked, " + name + ". See you soon!");
+        location.reload(); 
     }
 }
 // Tus datos reales de la captura
