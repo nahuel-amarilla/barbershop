@@ -126,12 +126,14 @@ button, .time-slot, .btn-gold {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Evita que el zoom automático al escribir rompa el diseño */
-input[type="text"] {
-    font-size: 16px !important; 
-}
-.logo, .logo:hover, .logo:active, .logo:focus {
-    color: #d4af37 !important; /* El dorado de la navaja */
+/* Reemplazá el bloque final de tu CSS por este */
+.navbar-brand, .logo, 
+.navbar-brand:hover, .logo:hover, 
+.navbar-brand:active, .logo:active, 
+.navbar-brand:focus, .logo:focus {
+    color: var(--gold) !important; /* Usamos tu variable --gold */
     text-decoration: none !important;
     background: transparent !important;
+    outline: none !important; /* Quita el recuadro negro/azul al tocarlo */
+    box-shadow: none !important;
 }
