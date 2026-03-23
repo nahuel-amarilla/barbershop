@@ -25,82 +25,84 @@
     <div id="appointments-table"></div>
 
     <script>
-        // Security Lock (Simple Cyber Defense)
-        const password = prompt("Restricted Access. Enter Admin Password:");
-        if (password !== "1234") { // Change "1234" to your preferred code
-            alert("Unauthorized access.");
-            document.body.innerHTML = "<h1 style='color:red;'>ACCESS DENIED</h1>";
-            window.location.href = "index.html";
+    // 1. Security Lock (Simple Password)
+    const password = prompt("Restricted Access. Enter Admin Password:");
+    if (password !== "1234") { 
+        alert("Unauthorized access.");
+        document.body.innerHTML = "<h1 style='color:red;'>ACCESS DENIED</h1>";
+        window.location.href = "index.html";
+    }
+
+    // 2. Supabase Configuration (REPLACE WITH YOUR DATA)
+    const _supabase = supabase.createClient('TU_URL_DE_SUPABASE', 'TU_KEY_PUBLICA');
+
+    async function fetchAppointments() {
+        const { data, error } = await _supabase
+            .from('appointments') 
+            .select('*')
+            .order('created_at', { ascending: true }); // Ordena por cuando se creó el turno
+
+        if (error) {
+            console.error('Error:', error);
+            document.getElementById('status-msg').innerText = "Error loading database.";
+            return;
         }
 
-        // Supabase Configuration
-        const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
+        if (!data || data.length === 0) {
+            document.getElementById('status-msg').innerText = "No pending appointments found.";
+            document.getElementById('appointments-table').innerHTML = "";
+            return;
+        }
 
-        async function fetchAppointments() {
-            const { data, error } = await _supabase
-                .from('appointments') 
-                .select('*')
-                .order('appointment_date', { ascending: true });
-
-            if (error) {
-                console.error('Error:', error);
-                document.getElementById('status-msg').innerText = "Error loading data.";
-                return;
-            }
-
-            if (data.length === 0) {
-                document.getElementById('status-msg').innerText = "No pending appointments.";
-                document.getElementById('appointments-table').innerHTML = "";
-                return;
-            }
-
-            document.getElementById('status-msg').innerText = `Total Appointments: ${data.length}`;
-            
-            let tableHtml = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Service</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            data.forEach(item => {
-                tableHtml += `
+        document.getElementById('status-msg').innerText = `Total Appointments: ${data.length}`;
+        
+        let tableHtml = `
+            <table>
+                <thead>
                     <tr>
-                        <td>${item.full_name}</td>
-                        <td>${item.appointment_date}</td>
-                        <td>${item.appointment_time}</td>
-                        <td>${item.service_type}</td>
-                        <td>
-                            <button class="btn-complete" onclick="markAsDone('${item.id}')">DONE ✅</button>
-                        </td>
+                        <th>Client Name</th>
+                        <th>Service Type</th>
+                        <th>Time Slot</th>
+                        <th>Actions</th>
                     </tr>
-                `;
-            });
+                </thead>
+                <tbody>
+        `;
 
-            tableHtml += `</tbody></table>`;
-            document.getElementById('appointments-table').innerHTML = tableHtml;
-        }
+        data.forEach(item => {
+            tableHtml += `
+                <tr>
+                    <td>${item.client_name}</td>
+                    <td>${item.service_name}</td>
+                    <td>${item.appointment_time}</td>
+                    <td>
+                        <button class="btn-complete" onclick="markAsDone('${item.id}')">DONE ✅</button>
+                    </td>
+                </tr>
+            `;
+        });
 
-        async function markAsDone(id) {
-            if(confirm("Mark this appointment as completed?")) {
-                const { error } = await _supabase
-                    .from('appointments')
-                    .delete()
-                    .eq('id', id);
+        tableHtml += `</tbody></table>`;
+        document.getElementById('appointments-table').innerHTML = tableHtml;
+    }
 
-                if (!error) fetchAppointments();
+    async function markAsDone(id) {
+        if(confirm("Mark this appointment as completed? It will be removed from the list.")) {
+            const { error } = await _supabase
+                .from('appointments')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                fetchAppointments(); // Recarga la tabla
+            } else {
+                alert("Error deleting appointment.");
             }
         }
+    }
 
-        // Initial Load
-        fetchAppointments();
-    </script>
+    // Initial Load
+    fetchAppointments();
+</script>
 </body>
 </html>
