@@ -57,3 +57,9 @@ function confirmBooking() {
         alert("Please enter your name");
     }
 }
+// Tus datos reales de la captura
+const SUPABASE_URL = 'https://vldxrgqfhyiovmhpwwji.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_-7QXKM09mwe4tkJrmeGj2Q_5SEckfef';
+
+// Creamos el cliente de conexión
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
